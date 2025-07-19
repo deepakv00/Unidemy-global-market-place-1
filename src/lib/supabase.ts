@@ -28,7 +28,6 @@ export interface Category {
   id: string;
   name: string;
   description?: string;
-  icon?: string;
   is_special?: boolean;
   created_at: string;
 }
@@ -420,7 +419,7 @@ export const getCategories = async () => {
   const { data, error } = await supabase
     .from('categories')
     .select('*')
-    .order('is_special', { ascending: true })
+    .order('is_special', { ascending: false })
     .order('name');
 
   if (error) throw error;
@@ -439,11 +438,46 @@ export const getProductsByCategory = async (categoryName?: string, limit = 20, o
 };
 
 export const getSpecialProducts = async (type: 'donation' | 'urgent' | 'all' = 'all', limit = 10) => {
-  const { data, error } = await supabase.rpc('get_special_products', {
-    product_type: type,
-    limit_count: limit
-  });
+  let query = supabase
+    .from('products')
+    .select(`
+      *,
+      seller:user_profiles!seller_id(*),
+      category:categories!category_id(*)
+    `)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
+  if (type === 'donation') {
+    query = query.eq('price', 0);
+  } else if (type === 'urgent') {
+    // Get products from Urgent Sale category
+    const { data: urgentCategory } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', 'Urgent Sale')
+      .single();
+    
+    if (urgentCategory) {
+      query = query.eq('category_id', urgentCategory.id);
+    }
+  } else if (type === 'all') {
+    // Get both donation and urgent products
+    const { data: urgentCategory } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', 'Urgent Sale')
+      .single();
+    
+    if (urgentCategory) {
+      query = query.or(`price.eq.0,category_id.eq.${urgentCategory.id}`);
+    } else {
+      query = query.eq('price', 0);
+    }
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 };

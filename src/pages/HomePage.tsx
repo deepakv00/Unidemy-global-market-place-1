@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
-import { Search, MapPin, Clock, Filter, Sliders, Settings } from 'lucide-react';
+import { Search, MapPin, Clock, Filter, Sliders, Settings, Gift, Zap } from 'lucide-react';
 import { useProducts } from '../context/ProductContext';
 import { useAuth } from '../context/AuthContext';
+import { getSpecialProducts } from '../lib/supabase';
 import ProductCard from '../components/ProductCard';
 import FilterComponent from '../components/FilterComponent';
 import LocationModal from '../components/LocationModal';
@@ -19,6 +20,8 @@ const HomePage: React.FC = () => {
   const [cityFilter, setCityFilter] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [specialProducts, setSpecialProducts] = useState<any[]>([]);
+  const [isLoadingSpecial, setIsLoadingSpecial] = useState(true);
   const [userLocation, setUserLocation] = useState<{
     city?: string;
     state?: string;
@@ -31,7 +34,20 @@ const HomePage: React.FC = () => {
     if (searchFromUrl) {
       setSearchTerm(searchFromUrl);
     }
+    loadSpecialProducts();
   }, [searchParams]);
+
+  const loadSpecialProducts = async () => {
+    try {
+      setIsLoadingSpecial(true);
+      const data = await getSpecialProducts('all', 8);
+      setSpecialProducts(data || []);
+    } catch (error) {
+      console.error('Error loading special products:', error);
+    } finally {
+      setIsLoadingSpecial(false);
+    }
+  };
 
   const categories = ['All', 'Books', 'Electronics', 'Furniture', 'Services', 'Clothing', 'Sports'];
   const conditions = ['All', 'New', 'Like New', 'Good', 'Fair', 'Poor'];
@@ -110,6 +126,43 @@ const HomePage: React.FC = () => {
             <p className="text-blue-800 text-sm">
               Showing products from <strong>{userLocation.city}, {userLocation.state}</strong> and nearby areas
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Free & Urgent Deals Section */}
+      <div className="mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Free & Urgent Deals</h2>
+            <p className="text-gray-600">Great finds and community donations</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Gift className="w-4 h-4 text-green-600" />
+              <span>Free Items</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Zap className="w-4 h-4 text-orange-600" />
+              <span>Urgent Sales</span>
+            </div>
+          </div>
+        </div>
+
+        {isLoadingSpecial ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : specialProducts.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50 rounded-lg">
+            <Gift className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-600">No special deals available right now</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {specialProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
         )}
       </div>

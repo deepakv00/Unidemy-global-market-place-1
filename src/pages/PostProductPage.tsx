@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, X, Camera } from 'lucide-react';
+import { getCategories } from '../lib/supabase';
 import { useProducts } from '../context/ProductContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,6 +11,8 @@ const PostProductPage: React.FC = () => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -23,8 +26,23 @@ const PostProductPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const categories = ['Books', 'Electronics', 'Furniture', 'Services', 'Clothing', 'Sports'];
   const conditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
+
+  React.useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      setIsLoadingCategories(true);
+      const data = await getCategories();
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -203,21 +221,28 @@ const PostProductPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Category *
               </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.category ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select a category</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
+              {isLoadingCategories ? (
+                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  Loading categories...
+                </div>
+              ) : (
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.category ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                      {category.is_special && ' ⭐'}
+                    </option>
+                  ))}
+                </select>
+              )}
               {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
             </div>
 

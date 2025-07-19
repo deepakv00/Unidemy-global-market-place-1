@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Heart, Eye } from 'lucide-react';
+import { MapPin, Clock, Heart, Eye, Gift, Zap } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -73,6 +73,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="bg-blue-600 text-white px-2 py-1 rounded-md text-xs font-medium">
             {product.category}
           </div>
+          {/* Special badges for Donate and Urgent Sale */}
+          {product.price === 0 && (
+            <div className="bg-green-600 text-white px-2 py-1 rounded-md text-xs font-medium flex items-center space-x-1">
+              <Gift className="w-3 h-3" />
+              <span>FREE</span>
+            </div>
+          )}
+          {product.category === 'Urgent Sale' && (
+            <div className="bg-orange-600 text-white px-2 py-1 rounded-md text-xs font-medium flex items-center space-x-1">
+              <Zap className="w-3 h-3" />
+              <span>URGENT</span>
+            </div>
+          )}
           <div className={`px-2 py-1 rounded-md text-xs font-medium ${
             product.condition === 'New' 
               ? 'bg-green-100 text-green-800' 
