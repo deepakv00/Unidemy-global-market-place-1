@@ -453,22 +453,27 @@ export const getSpecialProducts = async (type: 'donation' | 'urgent' | 'all' = '
     query = query.eq('price', 0);
   } else if (type === 'urgent') {
     // Get products from Urgent Sale category
-    const { data: urgentCategory } = await supabase
+    const { data: urgentCategoryData } = await supabase
       .from('categories')
       .select('id')
-      .eq('name', 'Urgent Sale')
-      .single();
+      .eq('name', 'Urgent Sale');
+    
+    const urgentCategory = urgentCategoryData && urgentCategoryData.length > 0 ? urgentCategoryData[0] : null;
     
     if (urgentCategory) {
       query = query.eq('category_id', urgentCategory.id);
+    } else {
+      // If no Urgent Sale category exists, return empty array
+      return [];
     }
   } else if (type === 'all') {
     // Get both donation and urgent products
-    const { data: urgentCategory } = await supabase
+    const { data: urgentCategoryData } = await supabase
       .from('categories')
       .select('id')
-      .eq('name', 'Urgent Sale')
-      .single();
+      .eq('name', 'Urgent Sale');
+    
+    const urgentCategory = urgentCategoryData && urgentCategoryData.length > 0 ? urgentCategoryData[0] : null;
     
     if (urgentCategory) {
       query = query.or(`price.eq.0,category_id.eq.${urgentCategory.id}`);
